@@ -1,0 +1,707 @@
+spring.datasource.url=jdbc:mysql://localhost:3306/sistema_soa_db?useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+
+package com.prueba4.prueba4_1.controller;
+
+import com.prueba4.prueba4_1.model.Departamento;
+import com.prueba4.prueba4_1.service.DepartamentoService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/departamentos")
+@CrossOrigin(origins = "*")
+public class DepartamentoRestController {
+
+    @Autowired
+    private DepartamentoService departamentoService;
+
+    @GetMapping
+    public List<Departamento> listar() {
+        return departamentoService.listarDepartamentos();
+    }
+
+    @PostMapping
+    public Departamento crear(@RequestBody Departamento departamento) {
+        return departamentoService.guardar(departamento);
+    }
+}
+
+
+package com.prueba4.prueba4_1.controller;
+
+import com.prueba4.prueba4_1.model.Empleado;
+import com.prueba4.prueba4_1.service.EmpleadoService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/empleados")
+@CrossOrigin(origins = "*")
+public class EmpleadoRestController {
+
+    @Autowired
+    private EmpleadoService empleadoService;
+
+    @GetMapping
+    public List<Empleado> listar() {
+        return empleadoService.listarEmpleados();
+    }
+
+    @PostMapping
+    public Empleado crear(@RequestBody Empleado empleado) {
+        return empleadoService.guardar(empleado);
+    }
+
+    @GetMapping("/departamento/{id}")
+    public List<Empleado> listarPorDepartamento(@PathVariable Integer id) {
+        return empleadoService.buscarPorDepartamento(id);
+    }
+}
+
+
+package com.prueba4.prueba4_1.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import java.util.List;
+
+@Entity
+@Table(name = "departamentos")
+public class Departamento {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String nombre;
+
+    @JsonIgnore 
+    @OneToMany(mappedBy = "departamento", cascade = CascadeType.ALL)
+    private List<Empleado> empleados;
+    
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public List<Empleado> getEmpleados() { return empleados; }
+    public void setEmpleados(List<Empleado> empleados) { this.empleados = empleados; }
+}
+
+
+package com.prueba4.prueba4_1.model;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "empleados")
+public class Empleado {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id; 
+
+    private String nombre;
+    private String apellido;
+    private String cedula;
+
+    @ManyToOne
+    @JoinColumn(name = "departamento_id")
+    private Departamento departamento;
+    
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getApellido() { return apellido; }
+    public void setApellido(String apellido) { this.apellido = apellido; }
+    public String getCedula() { return cedula; }
+    public void setCedula(String cedula) { this.cedula = cedula; }
+    public Departamento getDepartamento() { return departamento; }
+    public void setDepartamento(Departamento departamento) { this.departamento = departamento; }
+}
+
+
+package com.prueba4.prueba4_1.repository;
+
+import com.prueba4.prueba4_1.model.Departamento;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface DepartamentoRepository extends JpaRepository<Departamento, Integer> {
+}
+
+
+
+package com.prueba4.prueba4_1.repository;
+
+import com.prueba4.prueba4_1.model.Empleado;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface EmpleadoRepository extends JpaRepository<Empleado, Integer> {
+    List<Empleado> findByDepartamentoId(Integer departamentoId);
+}
+
+
+package com.prueba4.prueba4_1.service;
+
+import com.prueba4.prueba4_1.model.Departamento;
+import com.prueba4.prueba4_1.repository.DepartamentoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class DepartamentoService {
+    @Autowired
+    private DepartamentoRepository departamentoRepository;
+
+    public List<Departamento> listarDepartamentos() {
+        return departamentoRepository.findAll();
+    }
+
+    public Departamento guardar(Departamento departamento) {
+        return departamentoRepository.save(departamento);
+    }
+}
+
+
+package com.prueba4.prueba4_1.service;
+
+import com.prueba4.prueba4_1.model.Empleado;
+import com.prueba4.prueba4_1.repository.EmpleadoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class EmpleadoService {
+    @Autowired
+    private EmpleadoRepository empleadoRepository;
+
+    public List<Empleado> listarEmpleados() {
+        return empleadoRepository.findAll();
+    }
+
+    public Empleado guardar(Empleado empleado) {
+        return empleadoRepository.save(empleado);
+    }
+
+    public List<Empleado> buscarPorDepartamento(Integer departamentoId) {
+        return empleadoRepository.findByDepartamentoId(departamentoId);
+    }
+}
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>x</title>
+</head>
+<body>
+
+<h2>Departamentos</h2>
+<form id="formDepartamento">
+    <input type="text" id="nombreDepto" placeholder="Nombre Departamento" required>
+    <button type="submit">Guardar Departamento</button>
+</form>
+<br>
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<hr>
+
+<h2>Empleados</h2>
+<form id="formEmpleado">
+    <input type="text" id="nombreEmp" placeholder="Nombre" required>
+    <input type="text" id="apellidoEmp" placeholder="Apellido" required>
+    <input type="text" id="cedulaEmp" placeholder="Cédula" required>
+    <select id="selectDepto" required>
+        <option value="">Seleccione Departamento</option>
+    </select>
+    <button type="submit">Guardar Empleado</button>
+</form>
+<br>
+<label>Filtrar por Departamento:</label>
+<select id="filtroDepto">
+    <option value="">Todos los empleados</option>
+</select>
+<br><br>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Apellido</th>
+        <th>Cédula</th>
+        <th>Departamento</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const API_URL = 'http://localhost:8080/api';
+
+    async function cargarDatos() {
+        try {
+            const resDepto = await fetch(`${API_URL}/departamentos`);
+            const departamentos = await resDepto.json();
+
+            const tbodyDepto = document.querySelector('#tablaDepartamentos tbody') || document.querySelectorAll('table')[0].querySelector('tbody');
+            const selectDepto = document.getElementById('selectDepto');
+            const filtroDepto = document.getElementById('filtroDepto');
+
+            tbodyDepto.innerHTML = '';
+            selectDepto.innerHTML = '<option value="">Seleccione Departamento</option>';
+            filtroDepto.innerHTML = '<option value="">Todos los empleados</option>';
+
+            departamentos.forEach(d => {
+                tbodyDepto.innerHTML += `<tr><td>${d.id}</td><td>${d.nombre}</td></tr>`;
+                selectDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+                filtroDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+            });
+
+            cargarEmpleados(`${API_URL}/empleados`);
+        } catch (error) {
+            console.error("Error al cargar datos:", error);
+        }
+    }
+
+    async function cargarEmpleados(url) {
+        const resEmp = await fetch(url);
+        const empleados = await resEmp.json();
+        const tables = document.querySelectorAll('table');
+        const tbodyEmp = tables[1].querySelector('tbody');
+        tbodyEmp.innerHTML = '';
+
+        empleados.forEach(e => {
+            tbodyEmp.innerHTML += `<tr>
+                    <td>${e.id}</td>
+                    <td>${e.nombre}</td>
+                    <td>${e.apellido}</td>
+                    <td>${e.cedula}</td>
+                    <td>${e.departamento ? e.departamento.nombre : 'Sin depto'}</td>
+                </tr>`;
+        });
+    }
+
+    document.getElementById('formDepartamento').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await fetch(`${API_URL}/departamentos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre: document.getElementById('nombreDepto').value })
+        });
+        document.getElementById('nombreDepto').value = '';
+        cargarDatos();
+    });
+
+    document.getElementById('formEmpleado').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const empleado = {
+            nombre: document.getElementById('nombreEmp').value,
+            apellido: document.getElementById('apellidoEmp').value,
+            cedula: document.getElementById('cedulaEmp').value,
+            departamento: { id: parseInt(document.getElementById('selectDepto').value) }
+        };
+        await fetch(`${API_URL}/empleados`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(empleado)
+        });
+        e.target.reset();
+        cargarDatos();
+    });
+
+    document.getElementById('filtroDepto').addEventListener('change', (e) => {
+        const idDepto = e.target.value;
+        if (idDepto === '') {
+            cargarEmpleados(`${API_URL}/empleados`);
+        } else {
+            cargarEmpleados(`${API_URL}/empleados/departamento/${idDepto}`);
+        }
+    });
+    
+    cargarDatos();
+</script>
+</body>
+</html>
+
+
+
+
+spring.application.name=prueba4_2
+
+spring.datasource.url=jdbc:mysql://localhost:3306/biblioteca_soa_db?useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+server.port=8080
+
+
+package com.example.prueba4_2.controller;
+
+import com.example.prueba4_2.model.Autor;
+import com.example.prueba4_2.service.AutorService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/autores")
+@CrossOrigin(origins = "*")
+public class AutorController {
+
+    @Autowired
+    private AutorService autorService;
+
+    @GetMapping
+    public List<Autor> listar() {
+        return autorService.listarAutores();
+    }
+
+    @PostMapping
+    public Autor crear(@RequestBody Autor autor) {
+        return autorService.guardar(autor);
+    }
+}
+
+package com.example.prueba4_2.controller;
+
+import com.example.prueba4_2.model.Libro;
+import com.example.prueba4_2.service.LibroService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/libros")
+@CrossOrigin(origins = "*")
+public class LibroController {
+
+    @Autowired
+    private LibroService libroService;
+
+    @GetMapping
+    public List<Libro> listar() {
+        return libroService.listarLibros();
+    }
+
+    @PostMapping
+    public Libro crear(@RequestBody Libro libro) {
+        return libroService.guardar(libro);
+    }
+
+    @GetMapping("/autor/{id}")
+    public List<Libro> listarPorAutor(@PathVariable Integer id) {
+        return libroService.buscarPorAutor(id);
+    }
+
+    @DeleteMapping("/{id}")
+    public void eliminar(@PathVariable Integer id) {
+        libroService.eliminar(id);
+    }
+}
+
+package com.example.prueba4_2.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import java.util.List;
+
+@Entity
+@Table(name = "autores")
+public class Autor {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String nombre;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL)
+    private List<Libro> libros;
+
+    public Autor() {}
+
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public List<Libro> getLibros() { return libros; }
+    public void setLibros(List<Libro> libros) { this.libros = libros; }
+}
+
+package com.example.prueba4_2.model;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "libros")
+public class Libro {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String titulo;
+
+    @ManyToOne
+    @JoinColumn(name = "autor_id")
+    private Autor autor;
+
+    public Libro() {}
+
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+    public String getTitulo() { return titulo; }
+    public void setTitulo(String titulo) { this.titulo = titulo; }
+    public Autor getAutor() { return autor; }
+    public void setAutor(Autor autor) { this.autor = autor; }
+}
+
+package com.example.prueba4_2.repository;
+
+import com.example.prueba4_2.model.Autor;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface AutorRepository extends JpaRepository<Autor, Integer> {
+}
+
+package com.example.prueba4_2.repository;
+
+import com.example.prueba4_2.model.Libro;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface LibroRepository extends JpaRepository<Libro, Integer> {
+    List<Libro> findByAutorId(Integer autorId);
+}
+
+package com.example.prueba4_2.service;
+
+import com.example.prueba4_2.model.Autor;
+import com.example.prueba4_2.repository.AutorRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class AutorService {
+    @Autowired
+    private AutorRepository autorRepository;
+
+    public List<Autor> listarAutores() {
+        return autorRepository.findAll();
+    }
+
+    public Autor guardar(Autor autor) {
+        return autorRepository.save(autor);
+    }
+}
+
+package com.example.prueba4_2.service;
+
+import com.example.prueba4_2.model.Libro;
+import com.example.prueba4_2.repository.LibroRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class LibroService {
+    @Autowired
+    private LibroRepository libroRepository;
+
+    public List<Libro> listarLibros() {
+        return libroRepository.findAll();
+    }
+
+    public Libro guardar(Libro libro) {
+        return libroRepository.save(libro);
+    }
+
+    public List<Libro> buscarPorAutor(Integer autorId) {
+        return libroRepository.findByAutorId(autorId);
+    }
+
+    public void eliminar(Integer id) {
+        libroRepository.deleteById(id);
+    }
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<h2>Autores</h2>
+<form id="formAutor">
+    <input type="text" id="nombreAutor" placeholder="Nombre del Autor" required>
+    <button type="submit">Guardar Autor</button>
+</form>
+<br>
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+    </tr>
+    </thead>
+    <tbody id="tablaAutores"></tbody>
+</table>
+
+<hr>
+
+<h2>Libros</h2>
+<form id="formLibro">
+    <input type="text" id="tituloLibro" placeholder="Título del Libro" required>
+    <select id="selectAutor" required>
+        <option value="">Seleccione Autor</option>
+    </select>
+    <button type="submit">Guardar Libro</button>
+</form>
+<br>
+<label>Filtrar por Autor:</label>
+<input type="text" id="filtroAutor" placeholder="Escribe el nombre del autor...">
+<br><br>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Autor</th>
+        <th>Acciones</th>
+    </tr>
+    </thead>
+    <tbody id="tablaLibros"></tbody>
+</table>
+
+<script>
+    const API_URL = 'http://localhost:8080/api';
+    let todosLosLibros = [];
+
+    async function cargarDatos() {
+        try {
+            const resAutor = await fetch(`${API_URL}/autores`);
+            const autores = await resAutor.json();
+
+            const tbodyAutor = document.getElementById('tablaAutores');
+            const selectAutor = document.getElementById('selectAutor');
+
+            tbodyAutor.innerHTML = '';
+            selectAutor.innerHTML = '<option value="">Seleccione Autor</option>';
+
+            autores.forEach(a => {
+                tbodyAutor.innerHTML += `<tr><td>${a.id}</td><td>${a.nombre}</td></tr>`;
+                selectAutor.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+            });
+
+            await cargarLibros();
+        } catch (error) {
+            console.error("Error al cargar datos:", error);
+        }
+    }
+
+    async function cargarLibros(nombreFiltro = '') {
+        try {
+            const resLibro = await fetch(`${API_URL}/libros`);
+            todosLosLibros = await resLibro.json();
+
+            let librosAMostrar = todosLosLibros;
+            if (nombreFiltro.trim() !== '') {
+                const filtroLower = nombreFiltro.toLowerCase();
+                librosAMostrar = todosLosLibros.filter(l => l.autor && l.autor.nombre.toLowerCase().includes(filtroLower));
+            }
+
+            const tbodyLibro = document.getElementById('tablaLibros');
+            tbodyLibro.innerHTML = '';
+
+            librosAMostrar.forEach(l => {
+                tbodyLibro.innerHTML += `<tr>
+                    <td>${l.id}</td>
+                    <td>${l.titulo}</td>
+                    <td>${l.autor ? l.autor.nombre : 'Sin autor'}</td>
+                    <td><button onclick="eliminarLibro(${l.id})">Eliminar</button></td>
+                </tr>`;
+            });
+        } catch (error) {
+            console.error("Error al cargar libros:", error);
+        }
+    }
+
+    document.getElementById('formAutor').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await fetch(`${API_URL}/autores`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre: document.getElementById('nombreAutor').value })
+        });
+        e.target.reset();
+        cargarDatos();
+    });
+
+    document.getElementById('formLibro').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const libro = {
+            titulo: document.getElementById('tituloLibro').value,
+            autor: { id: parseInt(document.getElementById('selectAutor').value) }
+        };
+        await fetch(`${API_URL}/libros`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(libro)
+        });
+        e.target.reset();
+        cargarDatos();
+    });
+
+    document.getElementById('filtroAutor').addEventListener('input', (e) => {
+        const nombreAutor = e.target.value;
+        cargarLibros(nombreAutor);
+    });
+
+    async function eliminarLibro(id) {
+        if (confirm('¿Deseas eliminar este libro?')) {
+            await fetch(`${API_URL}/libros/${id}`, { method: 'DELETE' });
+            cargarDatos();
+        }
+    }
+
+    cargarDatos();
+</script>
+</body>
+</html>
+
+
+
+
