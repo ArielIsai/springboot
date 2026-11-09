@@ -702,6 +702,8 @@ public class LibroService {
 </body>
 </html>
 
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -799,7 +801,6 @@ public class LibroService {
         });
     }
 
-    // Guardar Departamento
     document.getElementById('formDepartamento').addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -864,4 +865,156 @@ public class LibroService {
 </body>
 </html>
 
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<h2>Autores</h2>
+<form id="formAutor">
+    <input type="text" id="nombreAutor" placeholder="Nombre del Autor" required>
+    <button type="submit">Guardar Autor</button>
+</form>
+<br>
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+    </tr>
+    </thead>
+    <tbody id="tablaAutores"></tbody>
+</table>
+
+<hr>
+
+<h2>Libros</h2>
+<form id="formLibro">
+    <input type="text" id="tituloLibro" placeholder="Título del Libro" required>
+    <select id="selectAutor" required>
+        <option value="">Seleccione Autor</option>
+    </select>
+    <button type="submit">Guardar Libro</button>
+</form>
+<br>
+
+<label>Filtrar libros por Autor:</label>
+<input type="text" id="filtroAutor" placeholder="Escribe el nombre del autor...">
+<br><br>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Autor</th>
+    </tr>
+    </thead>
+    <tbody id="tablaLibros"></tbody>
+</table>
+
+<script>
+    const API_URL = 'http://localhost:8080/api';
+    let todosLosLibros = [];
+
+    async function cargarDatos() {
+        try {
+            const resAutor = await fetch(`${API_URL}/autores`);
+            const autores = await resAutor.json();
+
+            const tbodyAutor = document.getElementById('tablaAutores');
+            const selectAutor = document.getElementById('selectAutor');
+
+            tbodyAutor.innerHTML = '';
+            selectAutor.innerHTML = '<option value="">Seleccione Autor</option>';
+
+            autores.forEach(a => {
+                tbodyAutor.innerHTML += `<tr><td>${a.id}</td><td>${a.nombre}</td></tr>`;
+                selectAutor.innerHTML += `<option value="${a.id}">${a.nombre}</option>`;
+            });
+
+            await cargarLibros();
+        } catch (error) {
+            console.error("Error al cargar datos:", error);
+        }
+    }
+
+    async function cargarLibros(nombreFiltro = '') {
+        try {
+            const resLibro = await fetch(`${API_URL}/libros`);
+            todosLosLibros = await resLibro.json();
+
+            let librosAMostrar = todosLosLibros;
+            if (nombreFiltro.trim() !== '') {
+                const filtroLower = nombreFiltro.toLowerCase();
+                librosAMostrar = todosLosLibros.filter(l => l.autor && l.autor.nombre.toLowerCase().includes(filtroLower));
+            }
+
+            const tbodyLibro = document.getElementById('tablaLibros');
+            tbodyLibro.innerHTML = '';
+
+            librosAMostrar.forEach(l => {
+                tbodyLibro.innerHTML += `<tr>
+                    <td>${l.id}</td>
+                    <td>${l.titulo}</td>
+                    <td>${l.autor ? l.autor.nombre : 'Sin autor'}</td>
+                </tr>`;
+            });
+        } catch (error) {
+            console.error("Error al cargar libros:", error);
+        }
+    }
+
+    document.getElementById('formAutor').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const autor = {
+            nombre: document.getElementById('nombreAutor').value
+        };
+        const res = await fetch(`${API_URL}/autores`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(autor)
+        });
+        if (res.ok) {
+            document.getElementById('formAutor').reset();
+            cargarDatos();
+        } else {
+            console.error("Error al guardar autor");
+        }
+    });
+
+    document.getElementById('formLibro').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const libro = {
+            titulo: document.getElementById('tituloLibro').value,
+            autor: {
+                id: parseInt(document.getElementById('selectAutor').value)
+            }
+        };
+        const res = await fetch(`${API_URL}/libros`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(libro)
+        });
+        if (res.ok) {
+            document.getElementById('formLibro').reset();
+            cargarDatos();
+        } else {
+            console.error("Error al guardar libro");
+        }
+    });
+
+    document.getElementById('filtroAutor').addEventListener('input', (e) => {
+        const nombreAutor = e.target.value;
+        cargarLibros(nombreAutor);
+    });
+
+    cargarDatos();
+</script>
+</body>
+</html>
 
