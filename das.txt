@@ -702,6 +702,166 @@ public class LibroService {
 </body>
 </html>
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión Empresarial</title>
+</head>
+<body>
 
+<h2>Departamentos</h2>
+<form id="formDepartamento">
+    <input type="text" id="nombreDepto" placeholder="Nombre Departamento" required>
+    <button type="submit">Guardar Departamento</button>
+</form>
+<br>
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<hr>
+
+<h2>Empleados</h2>
+<form id="formEmpleado">
+    <input type="text" id="nombreEmp" placeholder="Nombre Empleado" required>
+    <select id="selectDepto" required>
+        <option value="">Seleccione Departamento</option>
+    </select>
+    <button type="submit">Guardar Empleado</button>
+</form>
+<br>
+
+<label>Buscar empleados por Departamento:</label>
+<input type="text" id="inputFiltroDepto" placeholder="Escribe el nombre del dpto...">
+<br><br>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Departamento</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const API_URL = 'http://localhost:8080/api';
+    let listaEmpleadosGlobal = [];
+
+    async function cargarDatos() {
+        try {
+            const resDepto = await fetch(`${API_URL}/departamentos`);
+            const departamentos = await resDepto.json();
+
+            const tbodyDepto = document.querySelectorAll('table')[0].querySelector('tbody');
+            const selectDepto = document.getElementById('selectDepto');
+
+            tbodyDepto.innerHTML = '';
+            selectDepto.innerHTML = '<option value="">Seleccione Departamento</option>';
+
+            departamentos.forEach(d => {
+                tbodyDepto.innerHTML += `<tr><td>${d.id}</td><td>${d.nombre}</td></tr>`;
+                selectDepto.innerHTML += `<option value="${d.id}">${d.nombre}</option>`;
+            });
+
+            await cargarEmpleados();
+        } catch (error) {
+            console.error("Error al cargar datos:", error);
+        }
+    }
+
+    async function cargarEmpleados() {
+        const resEmp = await fetch(`${API_URL}/empleados`);
+        listaEmpleadosGlobal = await resEmp.json();
+        mostrarEmpleados(listaEmpleadosGlobal);
+    }
+
+    function mostrarEmpleados(empleados) {
+        const tables = document.querySelectorAll('table');
+        const tbodyEmp = tables[1].querySelector('tbody');
+        tbodyEmp.innerHTML = '';
+
+        empleados.forEach(e => {
+            tbodyEmp.innerHTML += `<tr>
+                    <td>${e.id}</td>
+                    <td>${e.nombre}</td>
+                    <td>${e.departamento ? e.departamento.nombre : 'Sin depto'}</td>
+                </tr>`;
+        });
+    }
+
+    // Guardar Departamento
+    document.getElementById('formDepartamento').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const departamento = {
+            id: 0,
+            nombre: document.getElementById('nombreDepto').value
+        };
+
+        const response = await fetch(`${API_URL}/departamentos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(departamento)
+        });
+
+        if (response.ok) {
+            document.getElementById('nombreDepto').value = '';
+            cargarDatos();
+        } else {
+            console.error("Error al guardar departamento");
+        }
+    });
+
+    document.getElementById('formEmpleado').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const empleado = {
+            id: 0,
+            nombre: document.getElementById('nombreEmp').value,
+            departamento: {
+                id: parseInt(document.getElementById('selectDepto').value),
+                nombre: ""
+            }
+        };
+
+        const response = await fetch(`${API_URL}/empleados`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(empleado)
+        });
+
+        if (response.ok) {
+            event.target.reset();
+            cargarDatos();
+        } else {
+            console.error("Error al guardar empleado");
+        }
+    });
+
+    document.getElementById('inputFiltroDepto').addEventListener('input', (e) => {
+        const textoFiltro = e.target.value.toLowerCase();
+
+        const empleadosFiltrados = listaEmpleadosGlobal.filter(emp => {
+            if (!emp.departamento) return false;
+            return emp.departamento.nombre.toLowerCase().includes(textoFiltro);
+        });
+
+        mostrarEmpleados(empleadosFiltrados);
+    });
+
+    cargarDatos();
+</script>
+</body>
+</html>
 
 
