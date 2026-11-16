@@ -1,3 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+</head>
+<body>
+    <h3>Autores</h3>
+    <form id="formAutores">
+        <input type="text" id="autor" placeholder="Autor" required>
+        <button>GUARDAR</button>
+    </form>
+
+    <h3>Lista de Autores</h3>
+    <table border="1">
+        <tr>
+            <th>id</th>
+            <th>nombre</th>
+        </tr>
+
+        <tbody id="tablaAutores">
+
+        </tbody>
+    </table>
+
+    <h3>Libros</h3>
+    <form id="formLibros">
+        <input type="text" id="libro" placeholder="Libro" required>
+        <select id="selectAutores" required>
+            <option value="">Seleccione un Autor</option>
+        </select>
+        <button>GUARDAR</button>
+    </form>
+
+    <h3>Lista de Libros</h3>
+    <table border="1">
+        <tr>
+        <th>id</th>
+        <th>nombre</th>
+        <th>autor</th>
+        </tr>
+
+        <tbody id="tablaLibros">
+
+        </tbody>
+    </table>
+
+    <h3>Busqueda</h3>
+    <input type="search" id="buscar" placeholder="Buscar Libro por Autor">
+
+    <table border="1">
+    <tr>
+        <th>id</th>
+        <th>nombre</th>
+        <th>autor</th>
+    </tr>
+
+    <tbody id="tablaBusqueda">
+
+    </tbody>
+    </table>
+
+    <script>
+        const url="http://localhost:8080/api"
+
+        document.getElementById("buscar").addEventListener("input", function(){
+            const valor = document.getElementById("buscar").value;
+            const tabla = document.getElementById("tablaBusqueda");
+
+            if(valor===""){
+                tabla.innerHTML = '';
+                return;
+            }
+
+            fetch(url+"/libros")
+                .then(response => response.json())
+                .then( data => {
+                    tabla.innerHTML= '';
+                    data.forEach( libro => {
+                        if(libro.autor.nombre.includes(valor)){
+                            tabla.innerHTML += '<tr><td>'+libro.id+'</td><td>'+libro.titulo+'</td><td>'+libro.autor.nombre+'</td></tr>';
+                        }
+                    })
+                })
+                .catch(e => console.error("error: "+e))
+        })
+
+        function mostrarAutores(){
+            fetch(url+"/autores")
+                .then(response => response.json())
+                .then(data => {
+                    const tabla = document.getElementById("tablaAutores");
+                    const selector = document.getElementById("selectAutores");
+
+                    tabla.innerHTML='';
+                    selector.innerHTML = '<option value="">Seleccione un autor</option>';
+
+                    data.forEach(autor => {
+                        tabla.innerHTML += '<tr><td>'+autor.id+'</td><td>'+autor.nombre+'</td></tr>'
+                        selector.innerHTML += '<option value="'+autor.id+'">'+autor.nombre+'</option>';
+                    })
+                })
+                .catch(e=>console.error("error: "+e));
+        }
+
+        function mostrarLibros(){
+            fetch(url+"/libros")
+                .then(response => response.json())
+                .then(data => {
+                    const tabla = document.getElementById("tablaLibros");
+
+                    tabla.innerHTML='';
+
+                    data.forEach(libro => {
+                        tabla.innerHTML += '<tr><td>'+libro.id+'</td><td>'+libro.titulo+'</td><td>'+libro.autor.nombre+'</td></tr>'
+                        //selector.innerHTML += '<option value="'+autor.id+'">'+autor.nombre+'</option>';
+                    })
+                })
+                .catch(e=>console.error("error: "+e));
+        }
+
+        // instanciamos un documento que busca por id y añade el evento submit
+        // para el ingreso de datos, la funcion que recibe este evento y de paso eivtamos una recarga de la pagina
+        // ahi mismo instanciamos el formulario, un json nuevo para pasarle a java y a la bd
+        // instanciamos el fetch con la ruta, definimos 3 variables, una para el metodo post, definimos encabezados para json
+        // en el body transformamos el json a string para la BD
+        // usamos then, si la respuesta fue valida entonces aggs el valor del dpto o empleado
+        // creando un documento y agg el nombre del dpto con valor vacio y cargamos los datos actualizados,
+        // aidiconal el else y el catch de seguridad
+        document.getElementById("formAutores").addEventListener("submit", function (event){
+            event.preventDefault();
+
+            const autor = document.getElementById("autor").value;
+            const nuevo = { id:0, nombre:autor};
+
+            fetch(url+"/autores", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(nuevo)
+            })
+                .then(response => {
+                    if(response.ok){
+                        document.getElementById("formAutores").reset();
+                        mostrarAutores();
+                    }else{
+                        alert("error al guardar");
+                    }
+                })
+                .catch(e => console.error("error: "+e))
+        })
+
+        document.getElementById("formLibros").addEventListener("submit", function(event){
+            event.preventDefault();
+
+            const libro = document.getElementById("libro").value;
+            const select = document.getElementById("selectAutores").value;
+
+            const nuevo = {id:0, titulo:libro, autor:{
+                id: parseInt(select)
+                }}
+
+            fetch(url+"/libros", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(nuevo)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById("formLibros").reset();
+                        mostrarLibros();
+                    } else {
+                        alert("error al cargar");
+                    }
+                })
+        })
+
+        document.addEventListener("DOMContentLoaded", () => {
+            mostrarAutores();
+            mostrarLibros();
+        })
+
+    </script>
+
+</body>
+</html>
+
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document</title>
+</head>
+<body>
+    <h3>Departamentos</h3>
+    <form id="formDptos">
+        <input type="text" id="dpto" placeholder="Departamento" required>
+        <button>GUARDAR</button>
+    </form>
+
+    <h3>Lista de Departamentos</h3>
+    <table border="1">
+        <tr>
+            <th>id</th>
+            <th>nombre</th>
+        </tr>
+
+        <tbody id="tablaDptos">
+
+        </tbody>
+    </table>
+
+    <h3>Empleados</h3>
+    <form id="formEmpleados">
+        <input type="text" id="empleado" placeholder="Empleado" required>
+        <select id="selectDptos" required>
+            <option value="">Seleccione un Departamento</option>
+        </select>
+        <button>GUARDAR</button>
+    </form>
+
+    <h3>Lista de Empleados</h3>
+    <table border="1">
+        <tr>
+            <th>id</th>
+            <th>nombre</th>
+            <th>departamento</th>
+        </tr>
+
+        <tbody id="tablaEmpleados">
+
+        </tbody>
+    </table>
+
+    <h3>Busqueda</h3>
+    <input type="search" id="buscar" placeholder="Buscar Empleado por Departamento">
+
+    <table border="1">
+        <tr>
+            <th>id</th>
+            <th>nombre</th>
+            <th>departamento</th>
+        </tr>
+
+        <tbody id="tablaBusqueda">
+
+        </tbody>
+    </table>
+
+    <script>
+        const url = "http://localhost:8080/api";
+
+        document.getElementById("buscar").addEventListener("input", function(){
+            const valor = document.getElementById("buscar").value.toLowerCase();
+            const tabla = document.getElementById("tablaBusqueda");
+
+            if(valor === ""){
+                tabla.innerHTML = '';
+                return;
+            }
+
+            fetch(url + "/empleados")
+                .then(response => response.json())
+                .then(data => {
+                    tabla.innerHTML = '';
+                    data.forEach(empleado => {
+                        if(empleado.departamento.nombre.toLowerCase().includes(valor)){
+                            tabla.innerHTML += '<tr><td>' + empleado.id + '</td><td>' + empleado.nombre + '</td><td>' + empleado.departamento.nombre + '</td></tr>';
+                        }
+                    });
+                })
+                .catch(e => console.error("error: " + e));
+        });
+
+        function mostrarDepartamentos(){
+            fetch(url + "/departamentos")
+                .then(response => response.json())
+                .then(data => {
+                    const tabla = document.getElementById("tablaDptos");
+                    const selector = document.getElementById("selectDptos");
+
+                    tabla.innerHTML = '';
+                    selector.innerHTML = '<option value="">Seleccione un Departamento</option>';
+
+                    data.forEach(dpto => {
+                        tabla.innerHTML += '<tr><td>' + dpto.id + '</td><td>' + dpto.nombre + '</td></tr>';
+                        selector.innerHTML += '<option value="' + dpto.id + '">' + dpto.nombre + '</option>';
+                    });
+                })
+                .catch(e => console.error("error: " + e));
+        }
+
+        function mostrarEmpleados(){
+            fetch(url + "/empleados")
+                .then(response => response.json())
+                .then(data => {
+                    const tabla = document.getElementById("tablaEmpleados");
+
+                    tabla.innerHTML = '';
+
+                    data.forEach(empleado => {
+                        tabla.innerHTML += '<tr><td>' + empleado.id + '</td><td>' + empleado.nombre + '</td><td>' + empleado.departamento.nombre + '</td></tr>';
+                    });
+                })
+                .catch(e => console.error("error: " + e));
+        }
+
+        document.getElementById("formDptos").addEventListener("submit", function (event){
+            event.preventDefault();
+
+            const dpto = document.getElementById("dpto").value;
+            const nuevo = { id: 0, nombre: dpto };
+
+            fetch(url + "/departamentos", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(nuevo)
+            })
+                .then(response => {
+                    if(response.ok){
+                        document.getElementById("formDptos").reset();
+                        mostrarDepartamentos();
+                    }else{
+                        alert("error al guardar");
+                    }
+                })
+                .catch(e => console.error("error: " + e));
+        });
+
+        document.getElementById("formEmpleados").addEventListener("submit", function(event){
+            event.preventDefault();
+
+            const empleado = document.getElementById("empleado").value;
+            const select = document.getElementById("selectDptos").value;
+
+            const nuevo = {
+                id: 0, 
+                nombre: empleado, 
+                departamento: {
+                    id: parseInt(select)
+                }
+            };
+
+            fetch(url + "/empleados", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(nuevo)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById("formEmpleados").reset();
+                        mostrarEmpleados();
+                    } else {
+                        alert("error al cargar");
+                    }
+                })
+                .catch(e => console.error("error: " + e));
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            mostrarDepartamentos();
+            mostrarEmpleados();
+        });
+
+    </script>
+
+</body>
+</html>
+
+
+
+CREATE DATABASE IF NOT EXISTS banco_db;
+USE banco_db;
+
+
+spring.application.name=sistema-bancario
+
+spring.datasource.url=jdbc:mysql://localhost:3306/banco_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
+
+package com.example.banco.model;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "cuentas")
+public class Cuenta {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String numeroCuenta;
+
+    @Column(nullable = false)
+    private String titular;
+
+    @Column(nullable = false)
+    private Double saldo = 0.0;
+
+    public Cuenta() {}
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getNumeroCuenta() { return numeroCuenta; }
+    public void setNumeroCuenta(String numeroCuenta) { this.numeroCuenta = numeroCuenta; }
+
+    public String getTitular() { return titular; }
+    public void setTitular(String titular) { this.titular = titular; }
+
+    public Double getSaldo() { return saldo; }
+    public void setSaldo(Double saldo) { this.saldo = saldo; }
+}
+
+package com.example.banco.model;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "movimientos")
+public class Movimiento {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String tipo; // "DEPOSITO" o "RETIRO"
+
+    @Column(nullable = false)
+    private Double monto;
+
+    private LocalDateTime fecha = LocalDateTime.now();
+
+    @ManyToOne
+    @JoinColumn(name = "cuenta_id", nullable = false)
+    private Cuenta cuenta;
+
+    public Movimiento() {}
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
+
+    public Double getMonto() { return monto; }
+    public void setMonto(Double monto) { this.monto = monto; }
+
+    public LocalDateTime getFecha() { return fecha; }
+    public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
+
+    public Cuenta getCuenta() { return cuenta; }
+    public void setCuenta(Cuenta cuenta) { this.cuenta = cuenta; }
+}
+
+package com.example.banco.repository;
+
+import com.example.banco.model.Cuenta;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CuentaRepository extends JpaRepository<Cuenta, Long> {
+}
+
+package com.example.banco.repository;
+
+import com.example.banco.model.Movimiento;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
+}
+
+package com.example.banco.controller;
+
+import com.example.banco.model.Cuenta;
+import com.example.banco.repository.CuentaRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/cuentas")
+@CrossOrigin(origins = "*")
+public class CuentaController {
+
+    @Autowired
+    private CuentaRepository cuentaRepository;
+
+    @GetMapping
+    public List<Cuenta> listar() {
+        return cuentaRepository.findAll();
+    }
+
+    @PostMapping
+    public Cuenta guardar(@RequestBody Cuenta cuenta) {
+        if (cuenta.getSaldo() == null) {
+            cuenta.setSaldo(0.0);
+        }
+        return cuentaRepository.save(cuenta);
+    }
+}
+
+package com.example.banco.controller;
+
+import com.example.banco.model.Cuenta;
+import com.example.banco.model.Movimiento;
+import com.example.banco.repository.CuentaRepository;
+import com.example.banco.repository.MovimientoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/movimientos")
+@CrossOrigin(origins = "*")
+public class MovimientoController {
+
+    @Autowired
+    private MovimientoRepository movimientoRepository;
+
+    @Autowired
+    private CuentaRepository cuentaRepository;
+
+    @GetMapping
+    public List<Movimiento> listar() {
+        return movimientoRepository.findAll();
+    }
+
+    @PostMapping
+    public ResponseEntity<?> registrar(@RequestBody Movimiento movimiento) {
+        Cuenta cuenta = cuentaRepository.findById(movimiento.getCuenta().getId()).orElse(null);
+
+        if (cuenta == null) {
+            return ResponseEntity.badRequest().body("Cuenta no encontrada");
+        }
+
+        if (movimiento.getMonto() == null || movimiento.getMonto() <= 0) {
+            return ResponseEntity.badRequest().body("Monto inválido");
+        }
+
+        if ("DEPOSITO".equalsIgnoreCase(movimiento.getTipo())) {
+            cuenta.setSaldo(cuenta.getSaldo() + movimiento.getMonto());
+        } else if ("RETIRO".equalsIgnoreCase(movimiento.getTipo())) {
+            if (cuenta.getSaldo() < movimiento.getMonto()) {
+                return ResponseEntity.badRequest().body("Saldo insuficiente");
+            }
+            cuenta.setSaldo(cuenta.getSaldo() - movimiento.getMonto());
+        } else {
+            return ResponseEntity.badRequest().body("Tipo de movimiento inválido");
+        }
+
+        cuentaRepository.save(cuenta);
+        movimiento.setCuenta(cuenta);
+        movimiento.setFecha(LocalDateTime.now());
+        Movimiento guardado = movimientoRepository.save(movimiento);
+
+        return ResponseEntity.ok(guardado);
+    }
+}
+
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sistema Bancario</title>
+</head>
+<body>
+
+    <h3>Crear Cuenta</h3>
+    <form id="formCuentas">
+        <input type="text" id="numeroCuenta" placeholder="Número de Cuenta" required>
+        <input type="text" id="titular" placeholder="Titular" required>
+        <input type="number" step="0.01" id="saldoInicial" placeholder="Saldo Inicial" required>
+        <button type="submit">GUARDAR CUENTA</button>
+    </form>
+
+    <h3>Lista de Cuentas</h3>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Número Cuenta</th>
+            <th>Titular</th>
+            <th>Saldo</th>
+        </tr>
+        <tbody id="tablaCuentas"></tbody>
+    </table>
+
+    <h3>Realizar Depósito / Retiro</h3>
+    <form id="formMovimientos">
+        <select id="selectCuentas" required>
+            <option value="">Seleccione una Cuenta</option>
+        </select>
+        <select id="tipoMovimiento" required>
+            <option value="">Seleccione Operación</option>
+            <option value="DEPOSITO">DEPÓSITO</option>
+            <option value="RETIRO">RETIRO</option>
+        </select>
+        <input type="number" step="0.01" id="monto" placeholder="Monto" required>
+        <button type="submit">EJECUTAR</button>
+    </form>
+
+    <h3>Historial de Movimientos</h3>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Cuenta</th>
+            <th>Titular</th>
+            <th>Tipo</th>
+            <th>Monto</th>
+            <th>Fecha</th>
+        </tr>
+        <tbody id="tablaMovimientos"></tbody>
+    </table>
+
+    <h3>Buscar Movimientos por Cuenta o Titular</h3>
+    <input type="search" id="buscar" placeholder="Escriba número de cuenta o titular">
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Cuenta</th>
+            <th>Titular</th>
+            <th>Tipo</th>
+            <th>Monto</th>
+            <th>Fecha</th>
+        </tr>
+        <tbody id="tablaBusqueda"></tbody>
+    </table>
+
+    <script>
+        const url = "http://localhost:8080/api";
+
+        function mostrarCuentas() {
+            fetch(url + "/cuentas")
+                .then(response => response.json())
+                .then(data => {
+                    const tabla = document.getElementById("tablaCuentas");
+                    const selector = document.getElementById("selectCuentas");
+
+                    tabla.innerHTML = '';
+                    selector.innerHTML = '<option value="">Seleccione una Cuenta</option>';
+
+                    data.forEach(c => {
+                        tabla.innerHTML += '<tr><td>' + c.id + '</td><td>' + c.numeroCuenta + '</td><td>' + c.titular + '</td><td>$' + c.saldo.toFixed(2) + '</td></tr>';
+                        selector.innerHTML += '<option value="' + c.id + '">' + c.numeroCuenta + ' - ' + c.titular + ' ($' + c.saldo.toFixed(2) + ')</option>';
+                    });
+                })
+                .catch(e => console.error("error: " + e));
+        }
+
+        function mostrarMovimientos() {
+            fetch(url + "/movimientos")
+                .then(response => response.json())
+                .then(data => {
+                    const tabla = document.getElementById("tablaMovimientos");
+                    tabla.innerHTML = '';
+
+                    data.forEach(m => {
+                        tabla.innerHTML += '<tr><td>' + m.id + '</td><td>' + m.cuenta.numeroCuenta + '</td><td>' + m.cuenta.titular + '</td><td>' + m.tipo + '</td><td>$' + m.monto.toFixed(2) + '</td><td>' + m.fecha + '</td></tr>';
+                    });
+                })
+                .catch(e => console.error("error: " + e));
+        }
+
+        document.getElementById("formCuentas").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const numeroCuenta = document.getElementById("numeroCuenta").value;
+            const titular = document.getElementById("titular").value;
+            const saldo = parseFloat(document.getElementById("saldoInicial").value);
+
+            const nuevaCuenta = {
+                id: 0,
+                numeroCuenta: numeroCuenta,
+                titular: titular,
+                saldo: saldo
+            };
+
+            fetch(url + "/cuentas", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(nuevaCuenta)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById("formCuentas").reset();
+                        mostrarCuentas();
+                    } else {
+                        alert("Error al crear la cuenta (verifique que el número no esté repetido)");
+                    }
+                })
+                .catch(e => console.error("error: " + e));
+        });
+
+        document.getElementById("formMovimientos").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const cuentaId = document.getElementById("selectCuentas").value;
+            const tipo = document.getElementById("tipoMovimiento").value;
+            const monto = parseFloat(document.getElementById("monto").value);
+
+            const nuevoMovimiento = {
+                id: 0,
+                tipo: tipo,
+                monto: monto,
+                cuenta: { id: parseInt(cuentaId) }
+            };
+
+            fetch(url + "/movimientos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(nuevoMovimiento)
+            })
+                .then(async response => {
+                    if (response.ok) {
+                        document.getElementById("formMovimientos").reset();
+                        mostrarCuentas();      // Actualiza el saldo en la tabla y el select
+                        mostrarMovimientos();  // Actualiza el historial
+                    } else {
+                        const mensajeError = await response.text();
+                        alert("Error: " + mensajeError);
+                    }
+                })
+                .catch(e => console.error("error: " + e));
+        });
+
+        document.getElementById("buscar").addEventListener("input", function () {
+            const valor = document.getElementById("buscar").value.toLowerCase();
+            const tabla = document.getElementById("tablaBusqueda");
+
+            if (valor === "") {
+                tabla.innerHTML = '';
+                return;
+            }
+
+            fetch(url + "/movimientos")
+                .then(response => response.json())
+                .then(data => {
+                    tabla.innerHTML = '';
+                    data.forEach(m => {
+                        if (m.cuenta.numeroCuenta.toLowerCase().includes(valor) || m.cuenta.titular.toLowerCase().includes(valor)) {
+                            tabla.innerHTML += '<tr><td>' + m.id + '</td><td>' + m.cuenta.numeroCuenta + '</td><td>' + m.cuenta.titular + '</td><td>' + m.tipo + '</td><td>$' + m.monto.toFixed(2) + '</td><td>' + m.fecha + '</td></tr>';
+                        }
+                    });
+                })
+                .catch(e => console.error("error: " + e));
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            mostrarCuentas();
+            mostrarMovimientos();
+        });
+    </script>
+
+</body>
+</html>
+
+
+
 spring.datasource.url=jdbc:mysql://localhost:3306/sistema_soa_db?useSSL=false&serverTimezone=UTC
 spring.datasource.username=root
 spring.datasource.password=
